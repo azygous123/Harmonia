@@ -1,0 +1,183 @@
+;
+; This simple program uses interrupts and targets the atmega328P. It is
+; presented in GNU assembler syntax.  If you want to use the AVR assembler
+; (AVRASM) to assemble it, you will need to modify the syntax slightly.
+;
+
+;
+; Some equates to associate names with numbers
+;
+.equ _spl,   0x5d
+.equ _ddrd,  0x2a
+.equ _portd, 0x2b
+.equ _mcucr, 0x55
+.equ _eimsk, 0x3d
+.equ _eicra, 0x69
+.equ _ddrb, 0x24
+.equ _TurnOnB, 0x20
+.equ _TurnOffB, 0xDF
+.equ _PortB, 0x25
+.equ _PortD, 0x2B
+
+rjmp setup
+nop
+rjmp isr_0
+nop
+
+
+
+.org 0x60
+isr_0:
+
+         eor r1,r1
+         com r1
+         neg r1
+         eor r0, r0
+        ;lds r24,_ddrd ; load DDRD
+        ;andi r24,0x7F  ; clear PD2 pin       0111 1011    allow input from PD2
+        ;sts _ddrd,r24 ; write back to DDRD  ;as readpin
+
+         lds r24,_eimsk ; load EIMSK
+         andi r24,0xFE    ; enable INT0 in EIMSK
+         sts _eimsk,r24 ; write back to EIMSK
+        ;/// Old Code Pin 7 PortD
+        ;lds r24, _PortD    ;reading portD
+        ;mov r25, r24
+        ;andi r25, 0x80
+        ;brbs 1, turnon
+        ;andi r24, 0x7F  ; turnoff
+        ;ori r24, 0x80
+        ; sts 0x2B, r24 ;put code here
+        ;///
+
+
+
+       ;lds r16, 0x5F    ;enables interrupt from INT0 which is portD pin3?
+    ;ori r16, 0x80      ;ddrd 3rd bit
+    ;sts 0x5F, r16
+      ;our code to turn on the light
+
+    ;add r17,r1
+    ;call sink
+
+      lds r24, _PortB
+      mov r25, r24
+      andi r25, _TurnOnB
+      brbs 1, turnon
+
+      andi r24, _TurnOffB
+      sts _PortB, r24
+      lds r24, _PortD
+      andi r24, 0x7F
+      sts _PortD, r24
+
+
+
+    jmp pause
+    turnon:
+
+           ori r24, _TurnOnB
+           sts _PortB, r24
+
+           lds r24, _PortD
+           ori r24, 0x80
+           sts _PortD, r24
+          ; ori r24, 0x80
+           ;sts 0x2B, r24
+          ;lds r16, 0x5F    ;enables interrupt from INT0 which is portD pin3?
+          ;ori r16, 0x80      ;ddrd 3rd bit
+           ;sts 0x5F, r24
+
+         jmp pause
+
+.org 0x100
+setup:
+
+    ;ldi r16,0x80
+    ;ldi r17,0x88
+    ;sts _spl,r16 ; init stack ptr
+
+    lds r24,_ddrd ; load DDRD
+    andi r24,0xfb  ; clear PD2 pin       1111 1011    allow input from PD2
+    sts _ddrd,r24 ; write back to DDRD
+
+    lds r24,_portd ; load PORTD
+    andi r24,0xfb    ; disable pullup for PORTD[2]
+    sts _portd,r24 ; write back to PORTD
+
+    ; this sets int0 to trigger on rising edge...
+    lds r24,_eicra ; load EICRA
+    ori r24,0x03    ; enable isc00,isc01   ;while held down 01
+    sts _eicra,r24 ; write back to EICRA
+
+    lds r24,_eimsk ; load EIMSK
+    ori r24,0x01    ; enable INT0 in EIMSK
+    sts _eimsk,r24 ; write back to EIMSK
+
+    lds r16, 0x5F    ;set I flag in sreg
+    ori r16, 0x80
+    sts 0x5F, r16
+
+    ; lds r24, 0x24
+     ;ori r24, 0x20
+     ;sts 0x24,r24
+
+
+    lds r24,_ddrd ; load DDRD
+    ori r24,0x80  ; make PD7 pin  output 1000 0000
+    sts _ddrd,r24
+
+    lds r24, _ddrb
+    ori r24, 0x20
+    sts _ddrb, r24
+
+
+
+    ;sei ; enable interrupts
+
+
+
+sink:
+
+    add r16,r1
+    rjmp sink
+
+resetval:
+              eor r28, r28
+              eor r29, r29
+              ldi r30, 0x7D
+              ;lds r24,_PortD ; load DDRD
+              ;ori r24,0x80  ; clear PD2 pin       0111 1011    allow input from PD2
+              ;sts _PortD,r24 ; write back to DDRD  ;as readpin
+              lds r24,_eimsk ; load EIMSK
+              ori r24,0x01    ; enable INT0 in EIMSK
+              sts _eimsk,r24 ; write back to EIMSK
+
+              reti
+
+pause:
+                 add r28, r1
+                 adc r29, r0
+                 adc r30, r0
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 nop
+                 brbs 0, resetval
+
+                 rjmp pause
+

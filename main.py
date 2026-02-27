@@ -1,18 +1,18 @@
 #!/usr/bin/python3
-import tkinter as tk
+import sys
+from PyQt6.QtWidgets import QApplication
+from ui.main_window import MainWindow
 
-root = tk.Tk()
-root.title("Pynorfair IDE")
-root.geometry("800x600")  # optional, just a nice starting size
 
-# Text editor widget
-text_editor = tk.Text(root, wrap="none")
-text_editor.pack(side="left", fill="both", expand=True)
+def main():
+    app = QApplication(sys.argv)
 
-# Scrollbar
-scrollbar = tk.Scrollbar(root, command=text_editor.yview)
-scrollbar.pack(side="right", fill="y")
+    window = MainWindow()
+    window.show()
 
-text_editor.config(yscrollcommand=scrollbar.set)
+    sys.exit(app.exec())
 
-root.mainloop()
+
+if __name__ == "__main__":
+    main()
+    

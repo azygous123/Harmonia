@@ -1,0 +1,15 @@
+ldi r16, 0x05
+ldi r17, 0x04
+call test
+eor r1,r1
+ldi r18, 0x44
+
+
+test:
+     eor r0, r0
+     cp r17, r16
+     brbs 0, flip
+      ret
+flip:
+     com r0
+     ret

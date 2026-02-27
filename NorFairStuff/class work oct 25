@@ -1,0 +1,38 @@
+
+
+  ldi r17, 0xA5
+  push r17
+  call IsBit5Set
+
+  pop r5 ; result from function stored in r5
+ nop
+
+ eor r1,r1
+ com r1
+ neg r1
+
+  IsBit5Set:
+       pop r1   ; retreive PC of next instruction
+       pop r2
+
+       pop r16    ;get argument
+       andi r16, 0x20
+       push r16
+
+       push r2    ; return PC of next instruction to stack
+       push r1
+       ret
+
+  NumBitSetInR5:
+       eor r0,r0
+       eor r1,r1
+       ret
+
+  Again:
+   rjmp Again
+
+
+
+
+
+

@@ -1,0 +1,37 @@
+
+        eor r0,r0  ;always zero
+        ldi r16, 0x01 ; set to one
+          mov r1, r16  ; set to one
+         mov r2, r1 ; hold neg 1
+         neg r2
+         ldi r16, 0xAA ; X value temp holder
+         mov r17, r16 ; result
+
+
+
+
+
+
+
+
+   call PolynomiaX
+
+
+
+   ;  Pass in value x
+   ;  do x^2 then muliply by 2  then add to r17
+   ;  Find 5 multiplied by x (negate and add to r17)
+   ;  finally add 3
+   ;
+
+  PolynomiaX:
+
+
+
+MultiplyByTwoAndToLoc:
+
+       add r21, r21
+
+       add r27, r23
+       brbs 1,  Addto18
+       rjmp MultiplyByTwoAndToLoc

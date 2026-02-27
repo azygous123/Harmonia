@@ -1,0 +1,19 @@
+   .org 0x100
+jmp entry
+
+
+
+entry:
+      ldi r0, 6
+      ldi r17, 23
+      ldi r18, 1
+      neg r18
+      eor r0, r0
+
+loop:
+     add r0, r17
+
+     add r16, r18
+     brbc 1, loop
+sink:
+     rjmp sink

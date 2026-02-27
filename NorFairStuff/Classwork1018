@@ -1,0 +1,33 @@
+
+
+   call NumBitsSetInR5
+
+   eor r1, r1
+   com r1
+   neg r1
+
+
+   ;Isr5GreaterThanr6:
+               ;      eor r1,r1
+                ;     cp r6,r5
+                 ;    brbc 0, Done
+                ;
+                 ;    com r1
+                  ;   neg r1
+
+
+   NumBitsSetInR5:
+           eor r0,r0
+                      eor r1,r1
+               Again:
+                      cp r5, r0
+                      brbs 1, Done
+                      add r5,r5 ;left shift
+                      adc r1, r0  ;adding carry value + 0 to running total r1
+                      rjmp Again
+                      ret
+                ;mov r16, r6
+
+    Done:
+        rjmp Done
+

@@ -1,0 +1,114 @@
+Thu Oct  9 08:42:05 AM PDT 2025
+101 listening paper.odt
+1110 0001 0010 1000.txt
+20240925_221938.mp4
+20241010_213449.mp4
+2.1 and 2.2 homework 176.docx
+2.1 and 2.2 homework 176.odt
+518 45 6737 518 81 9180.txt
+a.out
+backup
+Bibliography Dustin Goodpaster.docx
+Bibliography.odt
+Books
+CitationsFinalSpeech.odt
+Citations Group Speech copy.odt
+Citations Group Speech.odt
+Classwork1018
+class work oct 25
+class work oct 28
+complete.png
+correct.mp4
+crash.png
+cs120
+CS 121
+cs150
+cs 150 hw number 1.odt
+cs 150 hw number 1.pdf
+cs3600 hw1.docx
+cs3600 hw1.odt
+cs homework number 4.odt
+Cyb2200
+CyberLab
+DataBase Labs
+DataBase_Labs.zip
+DataBase Systems
+Desktop
+Dev
+DisMath
+Downloads
+drug court.odt
+Dustin Credit History.pptx
+English 317
+english.tar
+eor r0 r0 always zero.txt
+ER Diagram 1.0.jpg
+ER Diagram 1.0.xcf
+ER Diagram 1.2.jpg
+ER Diagram 1.drawio
+ER Diagram 1.jpg
+ER Diagram 1.xcf
+ER Diagram 2.0.jpg
+ER Diagram 2.jpg
+ER Diagram 3.0.jpg
+ER Diagram 3.jpg
+ER Diagram 3.xcf
+ER Diagram 4.0.jpg
+ER Diagram 4.jpg
+Final Speech Outline Stegner.odt
+flipbit
+flipbit2
+flipbit_complete
+flipbit.txt
+GRBB.odp
+GRBB.pptx
+group speech.odt
+group speech Outline Draft 1.odt
+group speech Outline Draft 2.docx
+group speech Outline Draft 2.odt
+group speech review.docx
+group speech review.odt
+hamdist
+-home-azygous-.txt
+homework 5 cs150.odt
+homework 7 discrete math.odt
+homework 8 discrete math.odt
+hw5 math.odt
+hw61.asm
+hw6.asm
+hw 6 math.odt
+hw6.txt
+Improving Credit Speech.odt
+lab1.cpp
+Lab1 Dustin Goodpaster.docx
+Lab2_DustinGoodpaster.docx
+Latex Homework
+ldi r16 0x45 initial value.txt
+Learning C
+led on and off 
+ledonoffdebounce
+Life Story.docx
+Life Story.odt
+math homework 6.docx
+newledonoff
+newmain.c
+newmain.o
+Norfair work
+Oldproject
+Operating Systems
+out.txt
+retina paper.docx
+retina paper.odt
+Secure Coding
+si pass 1030
+sipass.asm
+Speech Outline.odt
+speech review paper.docx
+speech review paper.odt
+System Software
+sysvar.png
+test1
+Untitled 1.odt
+video hmw.odt
+yourmom.txt
+/home/azygous/Documents

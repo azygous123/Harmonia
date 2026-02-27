@@ -1,0 +1,75 @@
+
+ldi r16, 0x45 ;initial value of r16 to be reversed
+eor r17, r17          ;place holder for r16 to be lsr'd to nill
+eor r18, r18    ;store final result here
+mov r17, r16      ;lsr holder!
+ldi r20, 0x00  ;0 bit to push
+ldi r21, 0x01   ;1 bit to push
+ldi r22, 0x08  ;bit location counter
+ldi r23, 0xFF ; -1 to add to location counter
+ldi r24, 0x00 ;placeholder for flipmultiply
+ldi r28, 0x08
+neg r28 ;twos compliment of r28
+
+
+    testbits:
+
+             lsr r17
+             brbs 0, BitIsOne
+             jmp BitIsZero
+    BitIsOne:
+             add r22, r23
+
+           ;push r21
+           ;Call multiplybytwoAndAddatLocation
+
+           brbs 1, AddOneThenSink ;bit is 1 and the final bit!!!
+
+
+           mov r27, r22 ;current location sent to r27
+           ;add r27, r21 ;adds one to current location to establish correct number of times to multiply by 2
+           ;neg r27
+           jmp MultiplyByTwoAndToLoc
+
+           ; when multiplybytwoaddtoloc complete jmp testbits
+
+    BitIsZero:
+    add r22, r23
+    brbs 1, EndSink   ;last bit is zero end program
+          ;push r20
+
+           jmp testbits
+
+
+;Called if bit is 1 at location x
+;need a new location of y = 8 - x
+; add r21 to it self until y = 0
+; add   r21 to r18
+; REMEMBER set r21 back to one when function returns!
+
+MultiplyByTwoAndToLoc:
+
+       add r21, r21
+
+       add r27, r23
+       brbs 1,  Addto18
+       rjmp MultiplyByTwoAndToLoc
+
+Addto18:
+         add r18, r21 ; adds the value set to r18
+           ldi r21, 0x01 ; returns value of r21 to 1
+           jmp testbits
+
+
+AddOneThenSink:
+               add r18, r21
+               jmp EndSink
+
+EndSink:
+           rjmp EndSink
+
+
+
+
+
+

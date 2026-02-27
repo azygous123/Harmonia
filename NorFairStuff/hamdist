@@ -1,0 +1,22 @@
+   ldi r25, 0x38
+     ldi r26, 0x01
+     add r25, r26
+     sts $5D, r25
+     lds r22, $FF
+     eor r1,r1
+
+
+     setup:
+     lds r24, 0x24
+     ori r24, 0x20
+     sts 0x24,r24
+     turnon:
+     lds r24, 0x25
+     ori r24, 0x20
+     sts 0x25, r24
+     nop
+     turnoff:
+     lds r24, 0x25
+     andi r24, 0xDF
+     sts 0x25, r24
+     nop
