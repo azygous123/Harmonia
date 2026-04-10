@@ -15,4 +15,7 @@ class Simulator():
         # now we have initialized everything and it's all in one place ready to go
 
     def run(self, insts : List[Instruction]): # this is going to take a list of 
-        self._mainProgram = insts
+        self._mainProgram = insts     #list of instructions to run on the cpu
+        for (i, inst) in enumerate(self._mainProgram):
+            print(f"Executing instruction {i}: {inst}")
+            self.execute_instruction(inst)

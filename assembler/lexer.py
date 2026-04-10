@@ -39,7 +39,10 @@ class Lexer():
             if t in self.INSTRUCTIONS:
                 tkn = Token(t,"IN")
             else:
-                tkn = Token(t,"OP")
+                if t.endswith(":"):
+                    tkn = Token(t[:-1],"LBL")
+                else:
+                    tkn = Token(t,"OP")
             inst.append(tkn)
         return inst
 

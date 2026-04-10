@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QMainWindow
 from PyQt6.QtGui import QAction
 from ui.editor import CodeEditor
 from assembler.assembler import Asslembler
-from assembler.parser import Instruction
+from vm.instruction import Instruction
 from typing import List
 from ui.register_window import RegisterWindow
 from ui.memory_window import MemoryWindow
@@ -23,6 +23,9 @@ class MainWindow(QMainWindow):
         self.cpu = CPU()
 
         self.register_window = RegisterWindow(self.cpu)
+
+        self.cpu.register_window = self.register_window # this is so the cpu can call the refresh method of the register window whenever it needs to update the register values
+
         self.memory_window = MemoryWindow(self.cpu)
 
 
@@ -106,6 +109,8 @@ class MainWindow(QMainWindow):
         instructions : List[Instruction] = asselmbler.assemble(program_text) # this will give us a list of instructions to pass of the the simulator
         for i in instructions:
             print(i.op + " - " + i.instType)
+
+        self.cpu.run(instructions)
 
     def step_simulator(self):
         print("Step triggered")

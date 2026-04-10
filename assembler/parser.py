@@ -1,5 +1,6 @@
 from assembler.lexer import Token
 from typing import List
+from vm.instruction import Instruction
 
 class Parser():
     def __init__(self):
@@ -15,10 +16,7 @@ class Parser():
             inst.append(instA)
         return inst
 
-class Instruction():
-    def __init__(self, inst_type, pm):
-        self.instType = inst_type
-        self.op = pm
+
 
 
 
