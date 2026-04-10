@@ -39,6 +39,7 @@ class CPU():
             if (self.tagflag):
                 locNextInst = currprogram.fetch_instruction(self.tag)
                 nextInst = currprogram.instructions[locNextInst]
+                self.tagflag = False
             else:
                 nextInst = currprogram.instructions[locNextInst]
             locNextInst += 1 #increment to get to the next instruction for the next loop
@@ -68,6 +69,7 @@ class CPU():
                     return 
                 else:
                     testA = True
+                    print ("TestA true")
                     InstName = nextInst.op
                 continue
 
@@ -76,10 +78,13 @@ class CPU():
                 if (testA):
                     OpA = nextInst.op
                     testB = True
+                    testA = False
+                    print ("TestB true")
                 elif(testB):
                     OpB = nextInst.op
                     testB = False
                     testA = False
+                    print ("Executing Command")
                     # here is where the execution phase should behing with fetching values from addresses
                     # then performing th instruction
                     # writeback and move on to the next instruction "Continue"
@@ -111,8 +116,23 @@ class CPU():
                 self.registers[int(opA[1:])] = result & 0xFF
 
                 self.update_ui()
+            case "SUB":
+                self.alu1 = self.fetchOperand(opA, "reg")
+                self.alu2 = self.fetchOperand(opB, "reg")
+                result = self.alu1 - self.alu2
+
+                self.registers[int(opA[1:])] = result & 0xFF
+
+                self.update_ui()
+            case "MOV":
+                self.alu1 = self.fetchOperand(opB, "reg")
+
+                result = self.alu1
+
+                self.registers[int(opA[1:])] = result & 0xFF
+                self.update_ui()
             case "LDI":
-                self.registers[int(opA[1:])] = int(opB) & 0xFF
+                self.registers[int(opA[1:])] = int(opB, 0) & 0xFF
                 self.update_ui()
             case _:
                 print(f"Error: Instruction {inst} not implemented yet")

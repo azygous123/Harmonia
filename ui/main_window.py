@@ -109,7 +109,6 @@ class MainWindow(QMainWindow):
         instructions : List[Instruction] = asselmbler.assemble(program_text) # this will give us a list of instructions to pass of the the simulator
         for i in instructions:
             print(i.op + " - " + i.instType)
-
         self.cpu.run(instructions)
 
     def step_simulator(self):

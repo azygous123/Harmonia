@@ -30,6 +30,7 @@ class Lexer():
     "RET",
     "RETI",
     "RJMP",
+    "SUB",
     "STS"
         ]
     def tokenize(self, line):

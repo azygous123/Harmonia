@@ -7,9 +7,12 @@ class Program():
         self.started = False
 
     def fetch_instruction(self, tag):
+        if (tag == "main" and not self.started):
+            self.started = True
+            return 0 #this is just here for now 
         loc = 0
         for instr in self.instructions:
-            if instr.pm == tag:
+            if instr.op == tag:
                 return loc + 1
             loc += 1
         return -1 #didn't find anything
