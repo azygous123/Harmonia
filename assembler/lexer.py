@@ -37,7 +37,7 @@ class Lexer():
         tokens = line.replace(",", "").split()
         inst = []
         for t in tokens:
-            if t in self.INSTRUCTIONS:
+            if t.toupper() in self.INSTRUCTIONS:
                 tkn = Token(t,"IN")
             else:
                 if t.endswith(":"):

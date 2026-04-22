@@ -134,21 +134,33 @@ class CPU():
             case "LDI":
                 self.registers[int(opA[1:])] = int(opB, 0) & 0xFF
                 self.update_ui()
+            case "ADC":
+                self.alu1 = self.fetchOperand(opA, "reg")
+                self.alu2 = self.fetchOperand(opB, "reg")
+                result = self.alu1 + self.alu2
+
+
+
             case _:
                 print(f"Error: Instruction {inst} not implemented yet")
 
+
+                    #// READ ME:
+                    #// https://www.google.com/search?client=firefox-b-1-d&q=avr+location+memory+of+SREG&fbs=ADc_l-aN0CWEZBOHjofHoaMMDiKpaEWjvZ2Py1XXV8d8KvlI3sbM0Xv-BZKE_VrZb6-djVgPsTSy5UjazDfPq8BLa8BriI08eYAyMPM-9LNl6snbW0RI8x10I65p7k_mDqeHGhWd5G3zo_UP1QuiWQbQdC0uEyj49Iy43Tk0qIMousFs65SKUlmLSf2tVZi7oM3I5JQfNhYdwWzq9bejlmxLE2kuAY1D9A&ved=2ahUKEwiY556IuYKUAxWPEjQIHYnvHN4Q0NsOegQIAxAB&aep=10&ntc=1&mstk=AUtExfAW0oZdu0l_yqmr2AqlIN2R56fCzOkN8v-TtttG-2g1zNkPas-xQiZ-zJnBBRtqlKFRUK1-zXKmMy-uVhHx2WP4_XIrqRMgseD0_E3C4JCEPFYrv2w8LawW_tt_UStCMMfDV_yt9gf23sZU7u3fdsuAFKKkWWTQ-7h5nsP3JI4It7u3mBFEGhyy93xvn3PSjGRyhSdM3_dx6xm7LO51XmZwC47kOCR6jm6xXVYbzJco7ugMv9pz5jIrnw&csuir=1&udm=50
     def fetchOperand(self,memaddress,memtype):
         match memtype:
             case "reg":
                 memaddress = int(memaddress[1:]) 
                 return self.registers[memaddress]
             case "mem":
-                pass
+                memaddress = int(memaddress[1:]) 
+                return self.registers[memaddress]
             case _:
                 return 0
                 
                 # probably just have it return back the value input because it's an immediate value
                 # then I can still just use it in the ALU and it will work fine (hopefully)
+         
                 
     def update_ui(self):
         if self.register_window:
