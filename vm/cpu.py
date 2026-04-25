@@ -1,7 +1,9 @@
+from calendar import c
 from email.policy import default
 from vm.instruction import Instruction
 from vm.program import Program
-
+IO_OFFSET = 0x20
+SREG_ADDR = 0x5F
 
 class CPU():
     def __init__(self):
@@ -18,6 +20,15 @@ class CPU():
         self.alu2 = 0
         self.register_window = None
         self.memory_window = None
+        self.I = 0
+        self.T = 0
+        self.H = 0
+        self.S = 0
+        self.V = 0
+        self.N = 0
+        self.Z = 0
+        self.C = 0
+        self.map
 
 
 
@@ -38,11 +49,12 @@ class CPU():
             # the tag flag is set when we need to jump to a lable instead
             if (self.tagflag):
                 locNextInst = currprogram.fetch_instruction(self.tag)
-                nextInst = currprogram.instructions[locNextInst]
+                nextInst = currprogram.instructions[locNextInst] ##  
                 self.tagflag = False
             else:
                 nextInst = currprogram.instructions[locNextInst]
             locNextInst += 1 #increment to get to the next instruction for the next loop
+            self.PC = locNextInst
             
             # We are grouping instructions into three types: Labels, Instructions and Operands. 
             # If we encounter a label then we need to find the location of the instruction immediately following that label
@@ -75,6 +87,10 @@ class CPU():
 
 
             if (nextInst.instType == "OP"):
+                if (InstName == "ASR"):
+                    testB = True
+                    testA = False
+                    #set to the same lock as 2 op instructions now it will execute
                 if (testA):
                     OpA = nextInst.op
                     testB = True
@@ -107,15 +123,268 @@ class CPU():
         print(f"Executing {inst} with operands {opA} and {opB}")
         # here is where we will execute the instruction with the operands
         # this is going to be a big switch statement that checks the instruction and executes it accordingly)
-        match inst:
-            case "ADD":
+        match inst.upper():
+            case "ADC":
+                #get carry bit
+                carry = self.fetchOperand(0x3F, "mem")
+                carry = carry & 0x01
+                print(f"Carry bit val: {carry}")
+
+                #Fetch the two operands and add them together
                 self.alu1 = self.fetchOperand(opA, "reg")
                 self.alu2 = self.fetchOperand(opB, "reg")
-                result = self.alu1 + self.alu2
+                result = self.alu1 + self.alu2 # could be bigger than 8 bits
+                res8 = result & 0x80
+                # V flag set if overflow occured
+                sign1 = (self.alu1 ^ self.alu2) #& 0x80 not supposed to happen until after 
+                sign2 = (self.alu1 ^ result) #& 0x80
+                vcheck = ~sign1 & sign2
+                print(f"Sign1 : {sign1}")
+                print(f"~Sign1 : {~sign1}")
+                print(f"Sign2 : {sign2}")
+                print(f"vcheck = {vcheck}")
+                vcheck &= 0x80
+                if(vcheck == 0):
+                    self.V = 0
+                else:
+                    self.V = 1
 
-                self.registers[int(opA[1:])] = result & 0xFF
+                #update status register
+                #Add instruction 
+                # N flag set if result is negative
+                if(result & 0x80):
+                    self.N = 1
+                else:
+                    self.N = 0
 
+                # Z flag set if zero result
+                if((result & 0xFF) == 0):
+                    self.Z = 1
+                else:
+                    self.Z = 0
+                # H flag set if half carry flag is set
+                # if carry from 3rd bit
+                hcheck1 = self.alu1 & 0x0F
+                hcheck2 = self.alu2 & 0x0F
+                #mask off upper bits
+                outcarry = hcheck1 + hcheck2
+                outcarry = 0x10 & outcarry
+                if(outcarry != 0):
+                    self.H = 1
+                else:
+                    self.H = 0
+                # if carry from 8th bit then outcarry will not be zero
+                # C flag 
+                print (f"Result: {result}")
+                print (f"Result & 0x100: {result & 0x100}")
+                outcarry = 0x100 & result
+                if(outcarry != 0):
+                    self.C = 1
+                else:
+                    self.C = 0
+                
+                self.S = (self.V ^ self.N)
+                # flags set H,S,V,N,Z,C
+                # bits not set: IT
+                self.I = 2 #2 means ignore it and move on, only 1 and 0 are valid and forcefully updated each cycle
+                self.T = 2
+
+                self.registers[int(opA[1:])] = res8                
                 self.update_ui()
+
+
+            case "ADD":
+                #Fetch the two operands and add them together
+                self.alu1 = self.fetchOperand(opA, "reg")
+                self.alu2 = self.fetchOperand(opB, "reg")
+                result = self.alu1 + self.alu2 # could be bigger than 8 bits
+                res8 = result & 0xFF
+
+                # V flag set if overflow occured
+                sign1 = (self.alu1 ^ self.alu2) #& 0x80 not supposed to happen until after 
+                sign2 = (self.alu1 ^ result) #& 0x80
+                vcheck = ~sign1 & sign2
+                print(f"Sign1 : {sign1}")
+                print(f"~Sign1 : {~sign1}")
+                print(f"Sign2 : {sign2}")
+                print(f"vcheck = {vcheck}")
+                vcheck &= 0x80
+                if(vcheck == 0):
+                    self.V = 0
+                else:
+                    self.V = 1
+
+                #update status register
+                #Add instruction 
+                # N flag set if result is negative
+                if(result & 0x80):
+                    self.N = 1
+                else:
+                    self.N = 0
+
+                # Z flag set if zero result
+                if(res8 == 0):
+                    self.Z = 1
+                else:
+                    self.Z = 0
+                # H flag set if half carry flag is set
+                # if carry from 3rd bit
+                hcheck1 = self.alu1 & 0x0F
+                hcheck2 = self.alu2 & 0x0F
+                #mask off upper bits
+                outcarry = hcheck1 + hcheck2
+                outcarry = 0x10 & outcarry
+                if(outcarry != 0):
+                    self.H = 1
+                else:
+                    self.H = 0
+                # if carry from 8th bit then outcarry will not be zero
+                # C flag 
+                print (f"Result: {result}")
+                print (f"Result & 0x100: {result & 0x100}")
+                outcarry = 0x100 & result
+                if(outcarry != 0):
+                    self.C = 1
+                else:
+                    self.C = 0
+                
+                self.S = (self.V ^ self.N)
+                # flags set H,S,V,N,Z,C
+                # bits not set: IT
+                self.I = 2 #2 means ignore it and move on, only 1 and 0 are valid and forcefully updated each cycle
+                self.T = 2
+
+                self.registers[int(opA[1:])] = res8                
+                self.update_ui()
+            case "AND":
+                #Fetch the two operands and add them together
+                self.alu1 = self.fetchOperand(opA, "reg")
+                self.alu2 = self.fetchOperand(opB, "reg")
+                result = self.alu1 & self.alu2 # could be bigger than 8 bits
+                res8 = result & 0xFF
+
+                # V set to 0 
+                self.V = 0
+
+                # N = 8th bit value
+                if(result & 0x80):
+                    self.N = 1
+                else:
+                    self.N = 0
+
+                # S is  N ^ V
+                self.S = (self.V ^ self.N)
+
+                # Z set to 0 if result was zero
+                if(res8 == 0):
+                    self.Z = 0
+                else:
+                    self.Z = 1
+
+                #bits not set ITHC
+                self.I = 2 #2 means ignore it and move on, only 1 and 0 are valid and forcefully updated each cycle
+                self.T = 2
+                self.H
+                self.C
+
+                self.registers[int(opA[1:])] = res8                  
+                self.update_ui()
+            case "ANDI":         
+                #Fetch the two operands and add them together
+                self.alu1 = self.fetchOperand(opA, "reg")
+                bval = int(opB, 0) & 0xFF
+                result = self.alu1 & bval # could be bigger than 8 bits
+                res8 = result & 0xFF
+
+                # V set to 0 
+                self.V = 0
+
+                # N = 8th bit value
+                if(result & 0x80):
+                    self.N = 1
+                else:
+                    self.N = 0
+
+                # S is  N ^ V
+                self.S = (self.V ^ self.N)
+
+                # Z set to 0 if result was zero
+                if(res8 == 0):
+                    self.Z = 0
+                else:
+                    self.Z = 1
+
+                #bits not set ITHC
+                self.I = 2 #2 means ignore it and move on, only 1 and 0 are valid and forcefully updated each cycle
+                self.T = 2
+                self.H = 2
+                self.C = 2
+
+                self.registers[int(opA[1:])] = res8                  
+                self.update_ui()
+            case "ASR":
+                print("ASR Running...")
+
+                self.alu1 = self.fetchOperand(opA, "reg")
+                print(f"This is the value of {opA}: {self.alu1}" )
+                lowbit = self.alu1 & 0x01
+                print(f"Lowbit {lowbit}")
+                result = self.alu1 >>1
+                print(f"Here's the result: {result}'")
+
+                print(f"Status Regrister before arithmatic bitwise shift right: {self.SREG} ")
+                print(f"We gotta do some tests... checking the status register bits S,V,N,Z,C")
+                print(f"These are the one's we're not testing...I, T, H")
+                self.printSReg()
+                print("Just testing it out :P")
+                print("Back to testing now...")
+                # Bits we copy S,V,N,Z,C
+                #starting with N
+                if (result & 0x80):
+                    #n set if MSB is set
+                    self.N = 1
+                else:
+                    self.N = 0
+
+                #z bit 
+                if (result == 0):
+                    self.Z == 1
+                else:
+                    self.Z == 0
+
+                #C bit
+                self.C = lowbit
+
+                #S bit
+                self.V = self.N ^ self.C
+
+                #V bit
+                self.S = self.N ^ self.V
+
+
+
+
+
+
+
+                self.printSReg()
+                print("Just testing it out :P")
+                print("Back to now that bits are set now...")
+                # SREG bits we do not I, T, H
+
+                self.I = 2
+                self.T = 2
+                self.H = 2
+            case "BRBC": #branch if bit clear (= 0) 
+                # We need to update the PC if Bit Clear
+                # How do we find the location of the instruction?
+
+                #locNextInst = currprogram.fetch_instruction(self.tag)
+                #nextInst = currprogram.instructions[locNextInst] ##  
+                #self.tagflag = False
+                pass
+
+                
             case "SUB":
                 self.alu1 = self.fetchOperand(opA, "reg")
                 self.alu2 = self.fetchOperand(opB, "reg")
@@ -134,10 +403,9 @@ class CPU():
             case "LDI":
                 self.registers[int(opA[1:])] = int(opB, 0) & 0xFF
                 self.update_ui()
-            case "ADC":
-                self.alu1 = self.fetchOperand(opA, "reg")
-                self.alu2 = self.fetchOperand(opB, "reg")
-                result = self.alu1 + self.alu2
+            
+           
+
 
 
 
@@ -153,8 +421,8 @@ class CPU():
                 memaddress = int(memaddress[1:]) 
                 return self.registers[memaddress]
             case "mem":
-                memaddress = int(memaddress[1:]) 
-                return self.registers[memaddress]
+                memaddress = int(memaddress) 
+                return self.memory[memaddress] #0 indexed IN/OUT if not IN/OUT use offset
             case _:
                 return 0
                 
@@ -163,8 +431,50 @@ class CPU():
          
                 
     def update_ui(self):
+        self.setSREG()
         if self.register_window:
             self.register_window.refresh()
         if self.memory_window:
             self.memory_window.refresh()
+    
+    def setSREG(self):
+        if(self.I == 1):
+            self.SREG |= 0x80
+        if(self.T == 1):
+            self.SREG |= 0x40
+        if(self.H == 1):
+            self.SREG |= 0x20
+        if(self.S == 1):
+            self.SREG |= 0x10
+        if(self.V == 1):
+            self.SREG |= 0x08
+        if(self.N == 1):
+            self.SREG |= 0x04
+        if(self.Z == 1):
+            self.SREG |= 0x02
+        if(self.C == 1):
+            self.SREG |= 0x01
+        
+        if(self.I == 0):
+            self.SREG &= 0x7F #0111 1111
+        if(self.T == 0):
+            self.SREG &= 0xBF #1011 1111
+        if(self.H == 0):
+            self.SREG &= 0xDF #1101 1111
+        if(self.S == 0):
+            self.SREG &= 0xEF #1110 1111
+        if(self.V == 0):
+            self.SREG &= 0xF7 #1111 0111
+        if(self.N == 0):
+            self.SREG &= 0xFB #1111 1011
+        if(self.Z == 0):
+            self.SREG &= 0xFD #1111 1101
+        if(self.C == 0):
+            self.SREG &= 0xFE #1111 1110
+        self.memory[0x3F] = self.SREG
 
+    def printSReg(self):
+        # let's do this 
+            #I,T,H,S,V,N,Z,C
+            print(f"I = {self.I},T = {self.T},H = {self.H},S = {self.S},V = {self.V},N = {self.N},Z = {self.Z},C = {self.C}")
+            
