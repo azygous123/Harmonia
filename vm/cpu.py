@@ -28,11 +28,9 @@ class CPU():
         self.N = 0
         self.Z = 0
         self.C = 0
-        self.map
+        self.map = []
 
-
-
-    def run(self, instructions):
+    def populateMap(self, instructions):
         currprogram = Program(instructions)
         locNextInst = 0
         upperBound = len(currprogram.instructions)
@@ -41,7 +39,19 @@ class CPU():
         OpB = None
         testA = False
         testB = False
+        #while(locNextInst != upperBound):
 
+
+    def run(self, instructions):  
+        currprogram = Program(instructions)
+        locNextInst = 0
+        upperBound = len(currprogram.instructions)
+        InstName = None
+        OpA = None
+        OpB = None
+        testA = False
+        testB = False
+        
 
 
         while (locNextInst != upperBound):
