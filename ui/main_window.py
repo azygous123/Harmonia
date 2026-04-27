@@ -1,6 +1,8 @@
 from xml.etree.ElementTree import tostring
 from PyQt6.QtWidgets import QMainWindow
 from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QTextCursor, QColor, QTextCharFormat
+from PyQt6.QtWidgets import QTextEdit
 from ui.editor import CodeEditor
 from assembler.assembler import Asslembler
 from vm.instruction import Instruction
@@ -21,7 +23,7 @@ class MainWindow(QMainWindow):
         
 
         self.cpu = CPU()
-
+        self.cpu.main_window = self
         self.register_window = RegisterWindow(self.cpu)
 
         self.cpu.register_window = self.register_window # this is so the cpu can call the refresh method of the register window whenever it needs to update the register values
@@ -109,7 +111,7 @@ class MainWindow(QMainWindow):
         instructions : List[Instruction] = asselmbler.assemble(program_text) # this will give us a list of instructions to pass of the the simulator
         for i in instructions:
             print(i.op + " - " + i.instType)
-        self.cpu.run(instructions)
+        self.cpu.run(instructions, self.editor)
 
     def step_simulator(self):
         print("Step triggered")
@@ -125,3 +127,26 @@ class MainWindow(QMainWindow):
     def show_memory(self):
         self.memory_window.refresh()
         self.memory_window.show()
+
+    def highlight_line(self, line_number: int):
+        editor = self.editor
+
+        extra_selections = []
+
+        selection = QTextEdit.ExtraSelection()
+        selection.format.setBackground(QColor("yellow"))
+
+        cursor = editor.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.Start)
+        cursor.movePosition(
+            QTextCursor.MoveOperation.Down,
+            QTextCursor.MoveMode.MoveAnchor,
+            line_number
+        )
+
+        cursor.select(QTextCursor.SelectionType.LineUnderCursor)
+
+        selection.cursor = cursor
+        extra_selections.append(selection)
+
+        editor.setExtraSelections(extra_selections)

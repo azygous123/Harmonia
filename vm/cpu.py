@@ -1,6 +1,7 @@
 from calendar import c
 from email.policy import default
 from vm.instruction import Instruction
+from ui.editor import CodeEditor
 from vm.program import Program
 IO_OFFSET = 0x20
 SREG_ADDR = 0x5F
@@ -29,21 +30,21 @@ class CPU():
         self.Z = 0
         self.C = 0
         self.map = []
+        self.main_window = None
+        self.HighlightedLine = 0
 
-    def populateMap(self, instructions):
+    def getHighlightedLine(self):
+        return self.HighlightedLine
+
+    def get_pc_from_map(self, instruction_index):
+        for pc, value in enumerate(self.map):
+            if value == instruction_index:
+                return pc
+        return -1  # not found
+
+    def run(self, instructions, editor):  
         currprogram = Program(instructions)
-        locNextInst = 0
-        upperBound = len(currprogram.instructions)
-        InstName = None
-        OpA = None
-        OpB = None
-        testA = False
-        testB = False
-        #while(locNextInst != upperBound):
-
-
-    def run(self, instructions):  
-        currprogram = Program(instructions)
+        self.populateMap(currprogram.instructions)
         locNextInst = 0
         upperBound = len(currprogram.instructions)
         InstName = None
@@ -58,13 +59,14 @@ class CPU():
             # for each loop we need to fetch next instruction unless the tag flag is set
             # the tag flag is set when we need to jump to a lable instead
             if (self.tagflag):
-                locNextInst = currprogram.fetch_instruction(self.tag)
+                locNextInst = currprogram.fetch_instruction(self.tag, instructions)
                 nextInst = currprogram.instructions[locNextInst] ##  
                 self.tagflag = False
+                continue
             else:
                 nextInst = currprogram.instructions[locNextInst]
             locNextInst += 1 #increment to get to the next instruction for the next loop
-            self.PC = locNextInst
+            #self.PC = locNextInst
             
             # We are grouping instructions into three types: Labels, Instructions and Operands. 
             # If we encounter a label then we need to find the location of the instruction immediately following that label
@@ -80,12 +82,17 @@ class CPU():
             # - LBL: we need to set the tag flag to true and continue
             #done
             if (nextInst.instType == "LBL"):
-                self.tagflag = True
+                #self.tagflag = True
+                #do nothing fall through to the next instructioin 
+                self.PC = self.get_pc_from_map(locNextInst - 1)
+                self.set_highlight_line(self.PC)
                 continue
 
             # IN: set testA continue to next to find operands
             # done, checked if it's an "in", now validate
             if (nextInst.instType == "IN"):
+                self.PC = self.get_pc_from_map(locNextInst - 1)
+                self.set_highlight_line(self.PC)
                 if (testA):
                     print("Error: IN instruction without an operand")
                     return 
@@ -114,7 +121,7 @@ class CPU():
                     # here is where the execution phase should behing with fetching values from addresses
                     # then performing th instruction
                     # writeback and move on to the next instruction "Continue"
-                    self.tagflag = self.executePhase(InstName, OpA, OpB)
+                    self.tagflag = self.executePhase(InstName, OpA, OpB, currprogram,instructions)
 
 
 
@@ -129,7 +136,7 @@ class CPU():
 
         #doublecheck off by 1 error in fetch instruction
         #simply adjust accordingly if there is one
-    def executePhase(self, inst, opA, opB):
+    def executePhase(self, inst, opA, opB, currProgram,instructions):
         print(f"Executing {inst} with operands {opA} and {opB}")
         # here is where we will execute the instruction with the operands
         # this is going to be a big switch statement that checks the instruction and executes it accordingly)
@@ -407,16 +414,54 @@ class CPU():
                     # branch logic works by looking up the next instruction based on the tag
                     incouter = 0
                    # for insg in instructions
-                    self.tag = opB # this is the lable we need
+                    self.tag = opB # this is the lable we need'
+                    #locationWeNeed = currProgram.fetch_instruction(self.tag, instructions)                   
                     return True                  
                 else:
-                    #set all the SREG flags here then return
-
+                    # No SREG effected 
+                    self.I = 2
+                    self.T = 2
+                    self.H = 2
+                    self.S = 2
+                    self.V = 2
+                    self.N = 2
+                    self.Z = 2
+                    self.C = 2
                     return False
                 #locNextInst = currprogram.fetch_instruction(self.tag)
                 #nextInst = currprogram.instructions[locNextInst] ##  
                 #self.tagflag = False
-                
+            case "BRBS": #branch if bit clear (= 0) 
+                # We need to update the PC if Bit Clear
+                # How do we find the location of the instruction?
+                initVal = 1
+                mul = int(opA)
+                for i in range(mul):
+                    initVal *= 2
+                testVal = self.SREG & initVal
+
+                if (testVal != 0):
+                    #branch here
+                    # branch logic works by looking up the next instruction based on the tag
+                    incouter = 0
+                   # for insg in instructions
+                    self.tag = opB # this is the lable we need'
+                    #locationWeNeed = currProgram.fetch_instruction(self.tag, instructions)                   
+                    return True                  
+                else:
+                    # No SREG effected 
+                    self.I = 2
+                    self.T = 2
+                    self.H = 2
+                    self.S = 2
+                    self.V = 2
+                    self.N = 2
+                    self.Z = 2
+                    self.C = 2
+                    return False
+                #locNextInst = currprogram.fetch_instruction(self.tag)
+                #nextInst = currprogram.instructions[locNextInst] ##  
+                #self.tagflag = False
                 
 
                 
@@ -514,4 +559,34 @@ class CPU():
         # let's do this 
             #I,T,H,S,V,N,Z,C
             print(f"I = {self.I},T = {self.T},H = {self.H},S = {self.S},V = {self.V},N = {self.N},Z = {self.Z},C = {self.C}")
-            
+
+    def set_highlight_line(self, line):
+        self.HighlightedLine = line
+        if self.main_window:
+            self.main_window.highlight_line(line)
+
+    def populateMap(self, instructions):
+        self.map = []
+
+        two_word_ops = {"CALL", "JMP", "LDS", "STS"}
+
+        i = 0
+        n = len(instructions)
+
+        while i < n:
+            inst = instructions[i]
+
+            # Only care about real instructions
+            if inst.instType == "IN":
+                op = inst.op.upper()
+
+                # Add mapping for this instruction
+                self.map.append(i)
+
+                if op in two_word_ops:
+                    # Add twice for 2-word instruction
+                    self.map.append(i)
+
+            i += 1
+    
+    

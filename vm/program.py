@@ -12,10 +12,10 @@ class Program():
             return 0 #this is just here for now 
         loc = 0
         for instr in self.instructions:
-            if instr.op == tag:
+            if instr.op == tag and instr.instType == "LBL":
                 return loc + 1
             loc += 1
-        return -1 #didn't find anything
+        return 0 #didn't find anything was ne
 
 
 
