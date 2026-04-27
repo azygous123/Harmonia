@@ -6,7 +6,7 @@ class Program():
         self.instructions : List[Instruction] = instructions
         self.started = False
 
-    def fetch_instruction(self, tag):
+    def fetch_instruction(self, tag, instructions):
         if (tag == "main" and not self.started):
             self.started = True
             return 0 #this is just here for now 

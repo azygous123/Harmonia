@@ -114,7 +114,7 @@ class CPU():
                     # here is where the execution phase should behing with fetching values from addresses
                     # then performing th instruction
                     # writeback and move on to the next instruction "Continue"
-                    self.executePhase(InstName, OpA, OpB)
+                    self.tagflag = self.executePhase(InstName, OpA, OpB)
 
 
 
@@ -201,7 +201,7 @@ class CPU():
 
                 self.registers[int(opA[1:])] = res8                
                 self.update_ui()
-
+                return False
 
             case "ADD":
                 #Fetch the two operands and add them together
@@ -266,6 +266,8 @@ class CPU():
 
                 self.registers[int(opA[1:])] = res8                
                 self.update_ui()
+                return False
+
             case "AND":
                 #Fetch the two operands and add them together
                 self.alu1 = self.fetchOperand(opA, "reg")
@@ -299,6 +301,8 @@ class CPU():
 
                 self.registers[int(opA[1:])] = res8                  
                 self.update_ui()
+                return False
+
             case "ANDI":         
                 #Fetch the two operands and add them together
                 self.alu1 = self.fetchOperand(opA, "reg")
@@ -332,6 +336,8 @@ class CPU():
 
                 self.registers[int(opA[1:])] = res8                  
                 self.update_ui()
+                return False
+
             case "ASR":
                 print("ASR Running...")
 
@@ -385,14 +391,33 @@ class CPU():
                 self.I = 2
                 self.T = 2
                 self.H = 2
+                return False
+
             case "BRBC": #branch if bit clear (= 0) 
                 # We need to update the PC if Bit Clear
                 # How do we find the location of the instruction?
+                initVal = 1
+                mul = int(opA)
+                for i in range(mul):
+                    initVal *= 2
+                testVal = self.SREG & initVal
 
+                if (testVal == 0):
+                    #branch here
+                    # branch logic works by looking up the next instruction based on the tag
+                    incouter = 0
+                   # for insg in instructions
+                    self.tag = opB # this is the lable we need
+                    return True                  
+                else:
+                    #set all the SREG flags here then return
+
+                    return False
                 #locNextInst = currprogram.fetch_instruction(self.tag)
                 #nextInst = currprogram.instructions[locNextInst] ##  
                 #self.tagflag = False
-                pass
+                
+                
 
                 
             case "SUB":
@@ -403,6 +428,7 @@ class CPU():
                 self.registers[int(opA[1:])] = result & 0xFF
 
                 self.update_ui()
+                return False
             case "MOV":
                 self.alu1 = self.fetchOperand(opB, "reg")
 
@@ -410,6 +436,7 @@ class CPU():
 
                 self.registers[int(opA[1:])] = result & 0xFF
                 self.update_ui()
+                return False
             case "LDI":
                 self.registers[int(opA[1:])] = int(opB, 0) & 0xFF
                 self.update_ui()
@@ -418,10 +445,10 @@ class CPU():
 
 
 
-
+                return False
             case _:
                 print(f"Error: Instruction {inst} not implemented yet")
-
+                return False
 
                     #// READ ME:
                     #// https://www.google.com/search?client=firefox-b-1-d&q=avr+location+memory+of+SREG&fbs=ADc_l-aN0CWEZBOHjofHoaMMDiKpaEWjvZ2Py1XXV8d8KvlI3sbM0Xv-BZKE_VrZb6-djVgPsTSy5UjazDfPq8BLa8BriI08eYAyMPM-9LNl6snbW0RI8x10I65p7k_mDqeHGhWd5G3zo_UP1QuiWQbQdC0uEyj49Iy43Tk0qIMousFs65SKUlmLSf2tVZi7oM3I5JQfNhYdwWzq9bejlmxLE2kuAY1D9A&ved=2ahUKEwiY556IuYKUAxWPEjQIHYnvHN4Q0NsOegQIAxAB&aep=10&ntc=1&mstk=AUtExfAW0oZdu0l_yqmr2AqlIN2R56fCzOkN8v-TtttG-2g1zNkPas-xQiZ-zJnBBRtqlKFRUK1-zXKmMy-uVhHx2WP4_XIrqRMgseD0_E3C4JCEPFYrv2w8LawW_tt_UStCMMfDV_yt9gf23sZU7u3fdsuAFKKkWWTQ-7h5nsP3JI4It7u3mBFEGhyy93xvn3PSjGRyhSdM3_dx6xm7LO51XmZwC47kOCR6jm6xXVYbzJco7ugMv9pz5jIrnw&csuir=1&udm=50
