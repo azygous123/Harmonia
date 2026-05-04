@@ -603,7 +603,7 @@ class CPU():
                 self.Z = 2
                 self.C = 2
                 self.update_ui()
-                return false
+                return False
             case _:
                 print(f"Error: Instruction {inst} not implemented yet")
                 return False
