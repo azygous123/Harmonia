@@ -32,6 +32,8 @@ class CPU():
         self.map = []
         self.main_window = None
         self.HighlightedLine = 0
+        self.editorOut = None
+
 
     def getHighlightedLine(self):
         return self.HighlightedLine
@@ -43,6 +45,7 @@ class CPU():
         return -1  # not found
 
     def run(self, instructions, editor):  
+        self.editorOut = editor
         currprogram = Program(instructions)
         self.populateMap(currprogram.instructions)
         locNextInst = 0
@@ -570,7 +573,26 @@ class CPU():
             print(f"I = {self.I},T = {self.T},H = {self.H},S = {self.S},V = {self.V},N = {self.N},Z = {self.Z},C = {self.C}")
 
     def set_highlight_line(self, line):
+        program_text = self.editorOut.toPlainText()
+        count = 0
+        rlcount = 0
+        foundtag = False
+        for line in program_text.splitlines():
+            if count == line:
+                break
+            if (":" in line):
+                foundtag = True
+                continue
+            else:
+                count += 1;
+            rlcount += 1
+        line = rlcount
+        if (foundtag):
+            line += 1
         self.HighlightedLine = line
+
+
+
         if self.main_window:
             self.main_window.highlight_line(line)
 
