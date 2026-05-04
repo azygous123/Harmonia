@@ -1,0 +1,18 @@
+LDI r16, 0x55
+LDI r17, 0x44
+EOR r1, r1
+COM r1
+NEG r1
+EOR r2, r2
+COM r2
+EOR r0, r0 
+LDI r16, 0x05
+LDI r17, 0x06
+EOR r18, r18
+multiply:
+ADD r18, r17  
+ADD r16, r2     
+BRBS 1, done      
+BRBC 1, multiply      
+done:
+NOP

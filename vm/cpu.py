@@ -107,7 +107,7 @@ class CPU():
 
 
             if (nextInst.instType == "OP"):
-                if (InstName == "ASR"):
+                if (InstName == "ASR" or InstName == "COM" or InstName == "NEG"):
                     testB = True
                     testA = False
                     #set to the same lock as 2 op instructions now it will execute
@@ -360,7 +360,7 @@ class CPU():
                 print(f"Status Regrister before arithmatic bitwise shift right: {self.SREG} ")
                 print(f"We gotta do some tests... checking the status register bits S,V,N,Z,C")
                 print(f"These are the one's we're not testing...I, T, H")
-                self.printSReg()
+                
                 print("Just testing it out :P")
                 print("Back to testing now...")
                 # Bits we copy S,V,N,Z,C
@@ -386,7 +386,7 @@ class CPU():
                 #V bit
                 self.S = self.N ^ self.V
 
-                self.printSReg()              
+                              
                 print("Back to now that bits are set now...")
                 # SREG bits we do not I, T, H
 
@@ -475,7 +475,48 @@ class CPU():
                 #nextInst = currprogram.instructions[locNextInst] ##  
                 #self.tagflag = False
                 
+            case "COM":
+                print("COM Running...")
 
+                self.alu1 = self.fetchOperand(opA, "reg")
+
+                result = ~self.alu1 #1s complement
+                res8 = result & 0xFF # 8 bit version
+
+                self.registers[int(opA[1:])] = res8
+
+                # Bits we copy S,V,N,Z,C
+                #starting with N
+                if (result & 0x80):
+                    #n set if MSB is set
+                    self.N = 1
+                else:
+                    self.N = 0
+
+                #z bit 
+                if (result == 0):
+                    self.Z = 1
+                else:
+                    self.Z = 0
+
+                #C bit
+                self.C = 1
+
+                #V bit
+                self.V = 0
+
+                #S bit
+                self.S = self.N ^ self.V
+
+                              
+                # SREG bits we do not I, T, H
+
+                self.I = 2
+                self.T = 2
+                self.H = 2
+                self.update_ui()
+                return False
+            
                 
             case "SUB":
                 self.alu1 = self.fetchOperand(opA, "reg")
@@ -494,6 +535,55 @@ class CPU():
                 self.registers[int(opA[1:])] = result & 0xFF
                 self.update_ui()
                 return False
+
+            case "NEG":
+                # Fetch operand
+                self.alu1 = self.fetchOperand(opA, "reg")                
+                result = 0 - self.alu1               
+                res8 = result & 0xFF
+
+                self.registers[int(opA[1:])] = res8
+
+                # Z flag
+                if res8 == 0:
+                    self.Z = 1
+                else:
+                    self.Z = 0
+
+                # N flag (bit 7)
+                if res8 & 0x80:
+                    self.N = 1
+                else:
+                    self.N = 0
+
+                # V flag (overflow only if result == 0x80)
+                if res8 == 0x80:
+                    self.V = 1
+                else:
+                    self.V = 0
+
+                # S flag
+                self.S = self.N ^ self.V
+
+                # C flag (set if original value != 0)
+                if self.alu1 != 0:
+                    self.C = 1
+                else:
+                    self.C = 0
+
+                # H flag (borrow from bit 3)
+                if (self.alu1 & 0x0F) != 0:
+                    self.H = 1
+                else:
+                    self.H = 0
+
+                # I, T not affected
+                self.I = 2
+                self.T = 2
+
+                self.update_ui()
+                return False
+
             case "LDI":
                 self.registers[int(opA[1:])] = int(opB, 0) & 0xFF
                 self.update_ui()
@@ -503,12 +593,25 @@ class CPU():
 
 
                 return False
+            case "NOP":
+                self.I = 2
+                self.T = 2
+                self.H = 2
+                self.S = 2
+                self.V = 2
+                self.N = 2
+                self.Z = 2
+                self.C = 2
+                self.update_ui()
+                return false
             case _:
                 print(f"Error: Instruction {inst} not implemented yet")
                 return False
 
-                    #// READ ME:
-                    #// https://www.google.com/search?client=firefox-b-1-d&q=avr+location+memory+of+SREG&fbs=ADc_l-aN0CWEZBOHjofHoaMMDiKpaEWjvZ2Py1XXV8d8KvlI3sbM0Xv-BZKE_VrZb6-djVgPsTSy5UjazDfPq8BLa8BriI08eYAyMPM-9LNl6snbW0RI8x10I65p7k_mDqeHGhWd5G3zo_UP1QuiWQbQdC0uEyj49Iy43Tk0qIMousFs65SKUlmLSf2tVZi7oM3I5JQfNhYdwWzq9bejlmxLE2kuAY1D9A&ved=2ahUKEwiY556IuYKUAxWPEjQIHYnvHN4Q0NsOegQIAxAB&aep=10&ntc=1&mstk=AUtExfAW0oZdu0l_yqmr2AqlIN2R56fCzOkN8v-TtttG-2g1zNkPas-xQiZ-zJnBBRtqlKFRUK1-zXKmMy-uVhHx2WP4_XIrqRMgseD0_E3C4JCEPFYrv2w8LawW_tt_UStCMMfDV_yt9gf23sZU7u3fdsuAFKKkWWTQ-7h5nsP3JI4It7u3mBFEGhyy93xvn3PSjGRyhSdM3_dx6xm7LO51XmZwC47kOCR6jm6xXVYbzJco7ugMv9pz5jIrnw&csuir=1&udm=50
+                   #// READ ME:
+                   #// https://www.google.com/search?client=firefox-b-1-d&q=avr+location+memory+of+SREG&fbs=ADc_l-aN0CWEZBOHjofHoaMMDiKpaEWjvZ2Py1XXV8d8KvlI3sbM0Xv-BZKE_VrZb6-djVgPsTSy5UjazDfPq8BLa8BriI08eYAyMPM-9LNl6snbW0RI8x10I65p7k_mDqeHGhWd5G3zo_UP1QuiWQbQdC0uEyj49Iy43Tk0qIMousFs65SKUlmLSf2tVZi7oM3I5JQfNhYdwWzq9bejlmxLE2kuAY1D9A&ved=2ahUKEwiY556IuYKUAxWPEjQIHYnvHN4Q0NsOegQIAxAB&aep=10&ntc=1&mstk=AUtExfAW0oZdu0l_yqmr2AqlIN2R56fCzOkN8v-TtttG-2g1zNkPas-xQiZ-zJnBBRtqlKFRUK1-zXKmMy-uVhHx2WP4_XIrqRMgseD0_E3C4JCEPFYrv2w8LawW_tt_UStCMMfDV_yt9gf23sZU7u3fdsuAFKKkWWTQ-7h5nsP3JI4It7u3mBFEGhyy93xvn3PSjGRyhSdM3_dx6xm7LO51XmZwC47kOCR6jm6xXVYbzJco7ugMv9pz5jIrnw&csuir=1&udm=50
+            
+
     def fetchOperand(self,memaddress,memtype):
         match memtype:
             case "reg":
@@ -526,6 +629,7 @@ class CPU():
                 
     def update_ui(self):
         self.setSREG()
+        self.printSReg()
         if self.register_window:
             self.register_window.refresh()
         if self.memory_window:

@@ -1,0 +1,14 @@
+LDI r16, 0x15
+LDI r19, 0xFF
+LDI r23, 0x22
+LDI r25 0x03
+LDI r20, 0x01
+ADD r16, r19
+ADC r16, r23
+ASR r16,
+BRBC 1, fold
+ADD r16, r25
+tree:
+LDI r25, 0x11
+fold:
+LDI r23, 0x22
