@@ -84,8 +84,8 @@ class CPU():
             if (nextInst.instType == "LBL"):
                 #self.tagflag = True
                 #do nothing fall through to the next instructioin 
-                self.PC = self.get_pc_from_map(locNextInst - 1)
-                self.set_highlight_line(self.PC)
+                #self.PC = self.get_pc_from_map(locNextInst - 1)
+                #self.set_highlight_line(self.PC)
                 continue
 
             # IN: set testA continue to next to find operands
@@ -150,17 +150,15 @@ class CPU():
                 #Fetch the two operands and add them together
                 self.alu1 = self.fetchOperand(opA, "reg")
                 self.alu2 = self.fetchOperand(opB, "reg")
-                result = self.alu1 + self.alu2 # could be bigger than 8 bits
-                res8 = result & 0x80
+                result = self.alu1 + self.alu2 + carry # could be bigger than 8 bits
+                
+                
+                res8 = result & 0xFF
                 # V flag set if overflow occured
                 sign1 = (self.alu1 ^ self.alu2) #& 0x80 not supposed to happen until after 
                 sign2 = (self.alu1 ^ result) #& 0x80
-                vcheck = ~sign1 & sign2
-                print(f"Sign1 : {sign1}")
-                print(f"~Sign1 : {~sign1}")
-                print(f"Sign2 : {sign2}")
-                print(f"vcheck = {vcheck}")
-                vcheck &= 0x80
+                vcheck = (~sign1 & sign2) & 0x80   #vcheck = ~sign1 & sign2
+              
                 if(vcheck == 0):
                     self.V = 0
                 else:
@@ -169,13 +167,13 @@ class CPU():
                 #update status register
                 #Add instruction 
                 # N flag set if result is negative
-                if(result & 0x80):
+                if(res8 & 0x80):
                     self.N = 1
                 else:
                     self.N = 0
 
                 # Z flag set if zero result
-                if((result & 0xFF) == 0):
+                if(res8 == 0):
                     self.Z = 1
                 else:
                     self.Z = 0
@@ -184,7 +182,7 @@ class CPU():
                 hcheck1 = self.alu1 & 0x0F
                 hcheck2 = self.alu2 & 0x0F
                 #mask off upper bits
-                outcarry = hcheck1 + hcheck2
+                outcarry = hcheck1 + hcheck2 + carry
                 outcarry = 0x10 & outcarry
                 if(outcarry != 0):
                     self.H = 1
@@ -234,7 +232,7 @@ class CPU():
                 #update status register
                 #Add instruction 
                 # N flag set if result is negative
-                if(result & 0x80):
+                if(res8 & 0x80):
                     self.N = 1
                 else:
                     self.N = 0
@@ -286,7 +284,7 @@ class CPU():
                 self.V = 0
 
                 # N = 8th bit value
-                if(result & 0x80):
+                if(res8 & 0x80):
                     self.N = 1
                 else:
                     self.N = 0
@@ -296,15 +294,15 @@ class CPU():
 
                 # Z set to 0 if result was zero
                 if(res8 == 0):
-                    self.Z = 0
-                else:
                     self.Z = 1
+                else:
+                    self.Z = 0
 
                 #bits not set ITHC
                 self.I = 2 #2 means ignore it and move on, only 1 and 0 are valid and forcefully updated each cycle
                 self.T = 2
-                self.H
-                self.C
+                self.H = 2
+                self.C = 2
 
                 self.registers[int(opA[1:])] = res8                  
                 self.update_ui()
@@ -321,7 +319,7 @@ class CPU():
                 self.V = 0
 
                 # N = 8th bit value
-                if(result & 0x80):
+                if(res8 & 0x80):
                     self.N = 1
                 else:
                     self.N = 0
@@ -331,9 +329,9 @@ class CPU():
 
                 # Z set to 0 if result was zero
                 if(res8 == 0):
-                    self.Z = 0
-                else:
                     self.Z = 1
+                else:
+                    self.Z = 0
 
                 #bits not set ITHC
                 self.I = 2 #2 means ignore it and move on, only 1 and 0 are valid and forcefully updated each cycle
@@ -353,8 +351,9 @@ class CPU():
                 lowbit = self.alu1 & 0x01
                 print(f"Lowbit {lowbit}")
                 result = self.alu1 >>1
+                
                 print(f"Here's the result: {result}'")
-
+                self.registers[int(opA[1:])] = result & 0xFF 
                 print(f"Status Regrister before arithmatic bitwise shift right: {self.SREG} ")
                 print(f"We gotta do some tests... checking the status register bits S,V,N,Z,C")
                 print(f"These are the one's we're not testing...I, T, H")
@@ -371,9 +370,9 @@ class CPU():
 
                 #z bit 
                 if (result == 0):
-                    self.Z == 1
+                    self.Z = 1
                 else:
-                    self.Z == 0
+                    self.Z = 0
 
                 #C bit
                 self.C = lowbit
@@ -384,20 +383,14 @@ class CPU():
                 #V bit
                 self.S = self.N ^ self.V
 
-
-
-
-
-
-
-                self.printSReg()
-                print("Just testing it out :P")
+                self.printSReg()              
                 print("Back to now that bits are set now...")
                 # SREG bits we do not I, T, H
 
                 self.I = 2
                 self.T = 2
                 self.H = 2
+                self.update_ui()
                 return False
 
             case "BRBC": #branch if bit clear (= 0) 
@@ -415,7 +408,15 @@ class CPU():
                     incouter = 0
                    # for insg in instructions
                     self.tag = opB # this is the lable we need'
-                    #locationWeNeed = currProgram.fetch_instruction(self.tag, instructions)                   
+                    #locationWeNeed = currProgram.fetch_instruction(self.tag, instructions)    
+                    self.I = 2
+                    self.T = 2
+                    self.H = 2
+                    self.S = 2
+                    self.V = 2
+                    self.N = 2
+                    self.Z = 2
+                    self.C = 2               
                     return True                  
                 else:
                     # No SREG effected 
@@ -446,7 +447,15 @@ class CPU():
                     incouter = 0
                    # for insg in instructions
                     self.tag = opB # this is the lable we need'
-                    #locationWeNeed = currProgram.fetch_instruction(self.tag, instructions)                   
+                    #locationWeNeed = currProgram.fetch_instruction(self.tag, instructions)
+                    self.I = 2
+                    self.T = 2
+                    self.H = 2
+                    self.S = 2
+                    self.V = 2
+                    self.N = 2
+                    self.Z = 2
+                    self.C = 2                   
                     return True                  
                 else:
                     # No SREG effected 
