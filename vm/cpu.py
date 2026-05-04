@@ -582,13 +582,12 @@ class CPU():
                 break
             if (":" in line):
                 foundtag = True
-                continue
             else:
                 count += 1;
             rlcount += 1
         line = rlcount
-        if (foundtag):
-            line += 1
+        #if (foundtag):
+            #line += 1
         self.HighlightedLine = line
 
 
