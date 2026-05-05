@@ -217,6 +217,8 @@ class CPU():
                 self.alu2 = self.fetchOperand(opB, "reg")
                 result = self.alu1 + self.alu2 # could be bigger than 8 bits
                 res8 = result & 0xFF
+                print(f"Result = {result}, Res8 = Result & 0xFF = {res8}")
+
 
                 # V flag set if overflow occured
                 sign1 = (self.alu1 ^ self.alu2) #& 0x80 not supposed to happen until after 
