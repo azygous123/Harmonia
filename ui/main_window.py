@@ -115,9 +115,16 @@ class MainWindow(QMainWindow):
 
     def step_simulator(self):
         print("Step triggered")
+        program_text = self.editor.toPlainText()
+        asselmbler = Asslembler() # C# would be Assembler assembler = new Assembler()
+        instructions : List[Instruction] = asselmbler.assemble(program_text) # this will give us a list of instructions to pass of the the simulator
+        for i in instructions:
+            print(i.op + " - " + i.instType)
+        self.cpu.step(instructions, self.editor)
 
     def reset_simulator(self):
         print("Reset triggered")
+        self.cpu.reset()
 
     def show_registers(self):
         self.register_window.refresh()
