@@ -91,7 +91,7 @@ class CPU():
                 self.locNextInst = self.currprogram.fetch_instruction(self.tag, instructions)
                 self.nextInst = self.currprogram.instructions[self.locNextInst] ##  
                 self.tagflag = False
-                continue
+                return
             else:
                 self.nextInst = self.currprogram.instructions[self.locNextInst]
             self.locNextInst += 1 #increment to get to the next instruction for the next loop
@@ -116,14 +116,14 @@ class CPU():
                 self.tag = self.nextInst.op
                 linenum = self.currprogram.getlabel_line(self.tag,instructions) #this should return the line number for a label
                 #now we should be able to update the highlighted row as the label line number
-                self.set_highlight_line_lbl(linenum)
+                self.set_highlight_line_lbl(linenum + 1)
                 continue
 
             # IN: set testA continue to next to find operands
             # done, checked if it's an "in", now validate
             if (self.nextInst.instType == "IN"):  
-                self.PC = self.get_pc_from_map(self.locNextInst - 1)
-                self.set_highlight_line(self.PC)
+                self.PC = self.get_pc_from_map(self.locNextInst - 1) + 1
+                self.set_highlight_line(self.PC - 1)
                 if (self.testA):
                     print("Error: IN instruction without an operand")
                     return 
@@ -220,7 +220,7 @@ class CPU():
                 self.tag = self.nextInst.op
                 linenum = self.currprogram.getlabel_line(self.tag,instructions) #this should return the line number for a label
                 #now we should be able to update the highlighted row as the label line number
-                self.set_highlight_line_lbl(linenum)
+                self.set_highlight_line_lbl(linenum + 1)
                 continue
 
             # IN: set testA continue to next to find operands

@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QMainWindow
 from PyQt6.QtGui import QAction
 from PyQt6.QtGui import QTextCursor, QColor, QTextCharFormat
 from PyQt6.QtWidgets import QTextEdit
+from PyQt6.QtGui import QShortcut, QKeySequence
 from ui.editor import CodeEditor
 from assembler.assembler import Asslembler
 from vm.instruction import Instruction
@@ -29,6 +30,12 @@ class MainWindow(QMainWindow):
         self.cpu.register_window = self.register_window # this is so the cpu can call the refresh method of the register window whenever it needs to update the register values
 
         self.memory_window = MemoryWindow(self.cpu)
+        self.runShortcut = QShortcut(QKeySequence("F5"), self)
+        self.runShortcut.activated.connect(self.run_simulator)
+
+        # F11 = Step
+        self.stepShortcut = QShortcut(QKeySequence("F11"), self)
+        self.stepShortcut.activated.connect(self.step_simulator)
 
 
     def _create_menu_bar(self):
