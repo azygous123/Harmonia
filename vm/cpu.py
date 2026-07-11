@@ -53,6 +53,10 @@ class CPU():
 
         #highlighter fix
         self.locOfIn = 0
+        self.current_index = 0       # points to next LBL or IN token
+        self.source_lines = []       # maps instruction/label tokens to editor line numbers
+        self.token_to_line = {}      # token index -> real editor line number
+        self.max_steps = 10000
 
 
     def getHighlightedLine(self):
@@ -65,106 +69,63 @@ class CPU():
         return -1  # not found
 
     def step(self, instructions, editor):
-        if (self.initialized == False):
-            self.initialized = True
-            self.editorOut = editor
-            self.currprogram = Program(instructions)
-            self.populateMap(self.currprogram.instructions)
-            self.locNextInst = 0
-            self.upperBound = len(self.currprogram.instructions)
-            self.InstName = None
-            self.OpA = None
-            self.OpB = None
-            self.testA = False
-            self.testB = False
-            self.nextInst = None
-            self.PC = 0
+        if not self.initialized:
+            self.initialize_execution(instructions, editor)
 
-        # have we found an instruction in this step yet? keep going until we do 
-        #found_inst = False
+        if self.current_index >= self.upperBound:
+            print("End of program")
+            return
 
+        curr = self.currprogram.instructions[self.current_index]
 
-        while (self.locNextInst != self.upperBound):
-            # for each loop we need to fetch next instruction unless the tag flag is set
-            # the tag flag is set when we need to jump to a lable instead
-            if (self.tagflag):
-                self.locNextInst = self.currprogram.fetch_instruction(self.tag, instructions)
-                self.nextInst = self.currprogram.instructions[self.locNextInst] ##  
-                self.tagflag = False
-                return
+        # Case 1: label
+        if curr.instType == "LBL":
+            self.highlight_token(self.current_index)
+
+            # Move past the label for the next step.
+            # The label itself does not execute.
+            self.current_index += 1
+            return
+
+        # Case 2: instruction
+        if curr.instType == "IN":
+            inst_name, opA, opB, next_index = self.collect_instruction(self.current_index)
+
+            # Highlight the instruction being executed.
+            self.highlight_token(self.current_index)
+
+            # Set PC to this instruction's PC.
+            pc = self.get_pc_from_map(self.current_index)
+            if pc != -1:
+                self.PC = pc
+
+            print(f"Executing {inst_name} with operands {opA} and {opB}")
+
+            branch_taken = self.executePhase(
+                inst_name,
+                opA,
+                opB,
+                self.currprogram,
+                instructions
+            )
+
+            if branch_taken:
+                # executePhase already sets self.tag for BRBC/BRBS
+                self.current_index = self.currprogram.fetch_instruction(self.tag, instructions)
             else:
-                self.nextInst = self.currprogram.instructions[self.locNextInst]
-            self.locNextInst += 1 #increment to get to the next instruction for the next loop
-            #self.PC = locNextInst
-            
-            # We are grouping instructions into three types: Labels, Instructions and Operands. 
-            # If we encounter a label then we need to find the location of the instruction immediately following that label
-            # If we encounter an instruction we need to take the next OP or next two OPS and execute the instruction with
-            # the OPs as operands. 
+                self.current_index = next_index
 
-            # I need a way to know which OP I'm at for the instruction.
-            # what we will do is keep the OpA and OpB variables declared outside of the loop.
-            # 
+            # After execution, update PC to the next real instruction if possible.
+            self.update_pc_to_next_instruction()
 
-            #--3 cases for the instruction types: LBL, IN, OP--
+            if self.register_window:
+                self.register_window.refresh()
 
-            # - LBL: we need to set the tag flag to true and continue
-            #done
-            if (self.nextInst.instType == "LBL"):
-                # now when we branch we land at a label or we just landed at a label anyway. We find the line number for that label
-                # then we use that to directly change the highlighted line
-                self.tag = self.nextInst.op
-                linenum = self.currprogram.getlabel_line(self.tag,instructions) #this should return the line number for a label
-                #now we should be able to update the highlighted row as the label line number
-                self.set_highlight_line_lbl(linenum + 1)
-                continue
+            return
 
-            # IN: set testA continue to next to find operands
-            # done, checked if it's an "in", now validate
-            if (self.nextInst.instType == "IN"):  
-                self.PC = self.get_pc_from_map(self.locNextInst - 1) + 1
-                self.set_highlight_line(self.PC - 1)
-                if (self.testA):
-                    print("Error: IN instruction without an operand")
-                    return 
-                else:
-                    self.testA = True
-                    print ("TestA true")
-                    self.InstName = self.nextInst.op
-                continue
-
-
-            if (self.nextInst.instType == "OP"):
-                if (self.InstName == "ASR" or self.InstName == "COM" or self.InstName == "NEG"):
-                    self.testB = True
-                    self.testA = False
-                    #set to the same lock as 2 op instructions now it will execute
-                if (self.testA):
-                    self.OpA = self.nextInst.op
-                    self.testB = True
-                    self.testA = False
-                    print ("TestB true")
-                elif(self.testB):
-                    self.OpB = self.nextInst.op
-                    self.testB = False
-                    self.testA = False
-                    print ("Executing Command")
-                    # here is where the execution phase should behing with fetching values from addresses
-                    # then performing th instruction
-                    # writeback and move on to the next instruction "Continue"
-                    
-                    self.tagflag = self.executePhase(self.InstName, self.OpA, self.OpB, self.currprogram,instructions)
-                    
-                    return
-
-
-                else:
-                    print("Error: OP instruction without an operand")
-                    return
-
-                continue
-        self.PC = self.get_pc_from_map(self.locNextInst - 1)
-        self.set_highlight_line(self.PC)
+        # Case 3: somehow landed on an operand
+        # Skip it so we don't get stuck.
+        self.current_index += 1
 
     def set_highlight_line_lbl(self, linenum):
         #just set the line number we were given with the program line number fetching method.
@@ -173,102 +134,19 @@ class CPU():
         if self.main_window:
             self.main_window.highlight_line(linenum)
 
-    def run(self, instructions, editor):  
-        if (self.initialized == False):
-            self.initialized = True
-            self.editorOut = editor
-            self.currprogram = Program(instructions)
-            self.populateMap(self.currprogram.instructions)
-            self.locNextInst = 0
-            self.upperBound = len(self.currprogram.instructions)
-            self.InstName = None
-            self.OpA = None
-            self.OpB = None
-            self.testA = False
-            self.testB = False
-            self.nextInst = None
-            self.currInst = 0
+    def run(self, instructions, editor):
+        if not self.initialized:
+            self.initialize_execution(instructions, editor)
 
+        steps = 0
 
-        while (self.locNextInst != self.upperBound):
-            # for each loop we need to fetch next instruction unless the tag flag is set
-            # the tag flag is set when we need to jump to a lable instead
-            if (self.tagflag):
-                self.locNextInst = self.currprogram.fetch_instruction(self.tag, instructions)
-                self.nextInst = self.currprogram.instructions[self.locNextInst] ##  
-                self.tagflag = False
-                continue
-            else:
-                self.nextInst = self.currprogram.instructions[self.locNextInst]
-            self.locNextInst += 1 #increment to get to the next instruction for the next loop
-            #self.PC = locNextInst
-            
-            # We are grouping instructions into three types: Labels, Instructions and Operands. 
-            # If we encounter a label then we need to find the location of the instruction immediately following that label
-            # If we encounter an instruction we need to take the next OP or next two OPS and execute the instruction with
-            # the OPs as operands. 
+        while self.current_index < self.upperBound:
+            self.step(instructions, editor)
 
-            # I need a way to know which OP I'm at for the instruction.
-            # what we will do is keep the OpA and OpB variables declared outside of the loop.
-            # 
-
-            #--3 cases for the instruction types: LBL, IN, OP--
-
-            # - LBL: we need to set the tag flag to true and continue
-            #done
-            if (self.nextInst.instType == "LBL"):
-                self.tag = self.nextInst.op
-                linenum = self.currprogram.getlabel_line(self.tag,instructions) #this should return the line number for a label
-                #now we should be able to update the highlighted row as the label line number
-                self.set_highlight_line_lbl(linenum + 1)
-                continue
-
-            # IN: set testA continue to next to find operands
-            # done, checked if it's an "in", now validate
-            if (self.nextInst.instType == "IN"):
-                self.PC = self.get_pc_from_map(self.locNextInst - 1)
-                #self.PC = self.PC + 1
-                
-                self.set_highlight_line_run(self.PC)
-                if (self.testA):
-                    print("Error: IN instruction without an operand")
-                    return 
-                else:
-                    self.testA = True
-                    print ("TestA true")
-                    self.InstName = self.nextInst.op
-                continue
-
-
-            if (self.nextInst.instType == "OP"):
-                if (self.InstName == "ASR" or self.InstName == "COM" or self.InstName == "NEG"):
-                    self.testB = True
-                    self.testA = False
-                    #set to the same lock as 2 op instructions now it will execute
-                if (self.testA):
-                    self.OpA = self.nextInst.op
-                    self.testB = True
-                    self.testA = False
-                    print ("TestB true")
-                elif(self.testB):
-                    self.OpB = self.nextInst.op
-                    self.testB = False
-                    self.testA = False
-                    print ("Executing Command")
-                    # here is where the execution phase should behing with fetching values from addresses
-                    # then performing th instruction
-                    # writeback and move on to the next instruction "Continue"
-                    
-                    self.tagflag = self.executePhase(self.InstName, self.OpA, self.OpB, self.currprogram,instructions)
-                    #self.set_highlight_line(self.PC)
-
-
-                else:
-                    print("Error: OP instruction without an operand")
-                    return
-
-                continue
-        self.PC = self.get_pc_from_map(self.locNextInst - 1)
+            steps += 1
+            if steps >= self.max_steps:
+                print("Run stopped: possible infinite loop")
+                return
 
 
 
@@ -607,7 +485,7 @@ class CPU():
                     self.N = 2
                     self.Z = 2
                     self.C = 2
-                    self.PC += 1
+                    #self.PC += 1
                     return False
                 #locNextInst = currprogram.fetch_instruction(self.tag)
                 #nextInst = currprogram.instructions[locNextInst] ##  
@@ -724,12 +602,8 @@ class CPU():
 
             case "LDI":
                 self.registers[int(opA[1:])] = int(opB, 0) & 0xFF
-                self.update_ui()
-            
+                self.update_ui()          
            
-
-
-
                 return False
             case "NOP":
                 self.I = 2
@@ -861,6 +735,11 @@ class CPU():
         self.SREG = 0
         self.SPH = 0x08
         self.SPL = 0xFF
+
+        self.current_index = 0
+        self.token_to_line = {}
+        self.currprogram = None
+
         self.update_ui()
         #now we can just hit run or step again it will reinitialize everything and start from the beginning of the program
         # run should have no issue happening after step or reset because everything is tied to global state variables that work 
@@ -891,4 +770,101 @@ class CPU():
 
             i += 1
     
-    
+    def initialize_execution(self, instructions, editor):
+        self.initialized = True
+        self.editorOut = editor
+        self.currprogram = Program(instructions)
+        self.populateMap(self.currprogram.instructions)
+
+        self.current_index = 0
+        self.upperBound = len(self.currprogram.instructions)
+
+        self.InstName = None
+        self.OpA = None
+        self.OpB = None
+
+        self.build_token_line_map(editor)
+        self.PC = 0
+
+    def build_token_line_map(self, editor):
+        self.token_to_line = {}
+
+        program_text = editor.toPlainText()
+        real_lines = program_text.splitlines()
+
+        token_index = 0
+
+        for real_line_number, line in enumerate(real_lines):
+            stripped = line.strip()
+
+            if stripped == "":
+                continue
+
+            # Find next useful parser token
+            while token_index < len(self.currprogram.instructions):
+                inst = self.currprogram.instructions[token_index]
+
+                if inst.instType == "LBL":
+                    self.token_to_line[token_index] = real_line_number
+                    token_index += 1
+                    break
+
+                if inst.instType == "IN":
+                    self.token_to_line[token_index] = real_line_number
+
+                    # Skip over operands that belong to this instruction
+                    token_index += 1
+                    while token_index < len(self.currprogram.instructions):
+                        next_inst = self.currprogram.instructions[token_index]
+                        if next_inst.instType == "IN" or next_inst.instType == "LBL":
+                            break
+                        token_index += 1
+
+                    break
+
+                token_index += 1
+                
+    def highlight_token(self, instruction_index):
+        if instruction_index in self.token_to_line:
+            line_number = self.token_to_line[instruction_index]
+            self.HighlightedLine = line_number
+
+            if self.main_window:
+                self.main_window.highlight_line(line_number)
+
+    def update_pc_to_next_instruction(self):
+        i = self.current_index
+
+        while i < self.upperBound:
+            curr = self.currprogram.instructions[i]
+
+            if curr.instType == "IN":
+                pc = self.get_pc_from_map(i)
+                if pc != -1:
+                    self.PC = pc
+                return
+
+            i += 1
+
+    def collect_instruction(self, start_index):
+        instr = self.currprogram.instructions[start_index]
+        inst_name = instr.op
+
+        operands = []
+        i = start_index + 1
+
+        while i < self.upperBound:
+            curr = self.currprogram.instructions[i]
+
+            if curr.instType == "IN" or curr.instType == "LBL":
+                break
+
+            if curr.instType == "OP":
+                operands.append(curr.op)
+
+            i += 1
+
+        opA = operands[0] if len(operands) >= 1 else None
+        opB = operands[1] if len(operands) >= 2 else None
+
+        return inst_name, opA, opB, i

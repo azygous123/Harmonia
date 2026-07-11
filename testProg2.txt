@@ -6,7 +6,20 @@ NEG r1
 EOR r2, r2
 COM r2
 EOR r0, r0 
-LDI r16, 0x05
+LDI r16LDI r16, 0x15
+LDI r19, 0xFF
+LDI r23, 0x22
+LDI r25 0x03
+LDI r20, 0x01
+ADD r16, r19
+ADC r16, r23
+ASR r16,
+BRBC 1, fold
+ADD r16, r25
+tree:
+LDI r25, 0x11
+fold:
+LDI r23, 0x22, 0x05
 LDI r17, 0x06
 EOR r18, r18
 multiply:
